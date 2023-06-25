@@ -8,7 +8,7 @@ struct Node<'a> {
     // and we dont mind copying it , which not gonna be a performance hit
     // just like in this case with i32 , then Cell is a good choice
     // If we have something that is not copyable like a [String] , then we can use RefCell
-    value: Cell<i32>,
+    value: Cell<String>,
     adjacent: Vec<&'a Node<'a>>,
 }
 
