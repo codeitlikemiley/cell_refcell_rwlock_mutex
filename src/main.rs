@@ -1,52 +1,66 @@
-use std::cell::RefCell;
-use std::thread;
+// we use RwLock to allow multiple readers or one writer
+// RwLock will block the current thread until the lock is available
+use std::{
+    sync::{Arc, RwLock},
+    thread,
+};
 
 #[derive(Debug)]
 #[allow(dead_code)]
-struct Node<'a> {
-    // RefCell is a container type that allows mutating the value inside
-    // have methods such as
-    // borrow , borrow_mut , try_borrow , try_borrow_mut
-    value: RefCell<String>,
-    adjacent: Vec<&'a Node<'a>>,
+struct Node {
+    value: RwLock<String>,
+    // we use Arc to allow multiple ownership of the same node
+    adjacent: Vec<Arc<Node>>,
 }
 
 fn add_urgency(node: &Node) {
-    // this would panic if we tried to borrow_mut twice
-    let mut current_value = node.value.borrow_mut();
-    current_value.push_str("!");
-    // We can also use try_borrow_mut to get a Result instead of panicking
-
-    // let mut current_value = node.value.try_borrow_mut().unwrap();
-    // *current_value += "!";
-
-
+    // wrap it in a block to release the lock as soon as we are done
+    {
+        let mut current_value = node.value.write().unwrap();
+        current_value.push_str("!");
+    }
     for adj in node.adjacent.iter() {
         add_urgency(&adj);
     }
 }
 
 fn main() {
-    let a = Node {
-        value: RefCell::new("abc".to_owned()),
-        adjacent: vec![],
-    };
-    let b = Node {
-        value: RefCell::new("def".to_owned()),
-        adjacent: vec![&a],
-    };
-    let c = Node {
-        value: RefCell::new("ghi".to_owned()),
-        adjacent: vec![&a],
-    };
+    // we use here Arc to allow multiple ownership of the same node
 
-   let t1 = thread::spawn(|| {
-        add_urgency(&a);
+    // we first declare the nodes
+    let a = Arc::new(Node {
+        value: RwLock::new("abc".to_owned()),
+        adjacent: vec![],
     });
-    t1.join();
+
+    let b = Arc::new(Node {
+        value: RwLock::new("def".to_owned()),
+        adjacent: vec![a.clone()],
+    });
+
+    let c = Arc::new(Node {
+        value: RwLock::new("ghi".to_owned()),
+        adjacent: vec![a.clone()],
+    });
+
+     // we spawn two threads to add urgency to all nodes
+    let t1_b = b.clone();
+    let t1 = thread::spawn(move || {
+        add_urgency(&t1_b);
+    });
+
+    let t2_c = c.clone();
+    let t2 = thread::spawn(move || {
+        add_urgency(&t2_c);
+    });
+
+    // wait for the threads to finish
+    t1.join().unwrap();
+    t2.join().unwrap();
 
     println!("After adding one to all nodes:");
-
-    dbg!(&a);
-    dbg!(&b);
+    // we can read the value without blocking
+    // we use &* to dereference the RwLock
+    dbg!(&*a);
+    dbg!(&*b);
 }
