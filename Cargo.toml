@@ -1,5 +1,5 @@
 [package]
-name = "phase_01"
+name = "cell_refcell_rwlock_mutex"
 version = "0.1.0"
 edition = "2021"
 
