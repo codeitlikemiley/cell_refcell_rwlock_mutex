@@ -40,9 +40,10 @@ fn main() {
         adjacent: vec![&a],
     };
 
-    thread::spawn(|| {
+   let t1 = thread::spawn(|| {
         add_urgency(&a);
     });
+    t1.join();
 
     println!("After adding one to all nodes:");
 
