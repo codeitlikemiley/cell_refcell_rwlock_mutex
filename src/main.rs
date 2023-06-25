@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::thread;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -39,7 +40,9 @@ fn main() {
         adjacent: vec![&a],
     };
 
-    add_urgency(&b);
+    thread::spawn(|| {
+        add_urgency(&a);
+    });
 
     println!("After adding one to all nodes:");
 
