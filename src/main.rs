@@ -1,14 +1,13 @@
-// we use RwLock to allow multiple readers or one writer
-// RwLock will block the current thread until the lock is available
+// we use Mutex to allow multiple ownership of the same node
 use std::{
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex},
     thread,
 };
 
 #[derive(Debug)]
 #[allow(dead_code)]
 struct Node {
-    value: RwLock<String>,
+    value: Mutex<String>,
     // we use Arc to allow multiple ownership of the same node
     adjacent: Vec<Arc<Node>>,
 }
@@ -16,7 +15,7 @@ struct Node {
 fn add_urgency(node: &Node) {
     // wrap it in a block to release the lock as soon as we are done
     {
-        let mut current_value = node.value.write().unwrap();
+        let mut current_value = node.value.lock().unwrap();
         current_value.push_str("!");
     }
     for adj in node.adjacent.iter() {
@@ -29,17 +28,21 @@ fn main() {
 
     // we first declare the nodes
     let a = Arc::new(Node {
-        value: RwLock::new("abc".to_owned()),
+        // replace RwLock with Mutex
+        // difference of Mutex with RwLock is that Mutex is not reentrant
+        // meaning that if a thread already has the lock, it cannot acquire it again
+        // this is to prevent deadlocks
+        value: Mutex::new("abc".to_owned()),
         adjacent: vec![],
     });
 
     let b = Arc::new(Node {
-        value: RwLock::new("def".to_owned()),
+        value: Mutex::new("def".to_owned()),
         adjacent: vec![a.clone()],
     });
 
     let c = Arc::new(Node {
-        value: RwLock::new("ghi".to_owned()),
+        value: Mutex::new("ghi".to_owned()),
         adjacent: vec![a.clone()],
     });
 
