@@ -1,48 +1,45 @@
-use std::cell::Cell;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 #[allow(dead_code)]
 struct Node<'a> {
-    // we use Cell to allow mutation of the value field
-    // if we have a piece of data that is copyable
-    // and we dont mind copying it , which not gonna be a performance hit
-    // just like in this case with i32 , then Cell is a good choice
-    // If we have something that is not copyable like a [String] , then we can use RefCell
-    value: Cell<String>,
+    // RefCell is a container type that allows mutating the value inside
+    // have methods such as
+    // borrow , borrow_mut , try_borrow , try_borrow_mut
+    value: RefCell<String>,
     adjacent: Vec<&'a Node<'a>>,
 }
 
-fn add_one(node: &Node) {
-    // we have setter and getter methods added by Cell
-    let current_value = node.value.get();
-    node.value.set(current_value + 1);
+fn add_urgency(node: &Node) {
+    // this would panic if we tried to borrow_mut twice
+    let mut current_value = node.value.borrow_mut();
+    current_value.push_str("!");
+    // We can also use try_borrow_mut to get a Result instead of panicking
 
-    // for adj in &node.adjacent {
-        // add_one(&adj);
-    // }
+    // let mut current_value = node.value.try_borrow_mut().unwrap();
+    // *current_value += "!";
 
-    // we use iter() to grab shared references to the adjacent nodes
-    // we dont wanna take ownership here
+
     for adj in node.adjacent.iter() {
-        add_one(&adj);
+        add_urgency(&adj);
     }
 }
 
 fn main() {
     let a = Node {
-        value: Cell::new(1),
+        value: RefCell::new("abc".to_owned()),
         adjacent: vec![],
     };
     let b = Node {
-        value: Cell::new(2),
+        value: RefCell::new("def".to_owned()),
         adjacent: vec![&a],
     };
     let c = Node {
-        value: Cell::new(4),
+        value: RefCell::new("ghi".to_owned()),
         adjacent: vec![&a],
     };
 
-    add_one(&b);
+    add_urgency(&b);
 
     println!("After adding one to all nodes:");
 
